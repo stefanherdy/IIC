@@ -7,24 +7,7 @@ import random
 import cv2
 import matplotlib.pyplot as plt
 
-
-
 def create_dense_target(tar: np.ndarray):
-    classes = np.unique(tar)
-    x = tar.shape
-    #tarnew = np.zeros(x,y)
-    #for i in range(x):
-    #    for j in range(y):
-
-    #l,w=x[0],x[1]
-    #dummy = np.zeros((l,w))
-    
-    '''for idx, value in enumerate(classes):
-        mask = np.where(tar == value)
-        dummy[mask[0:1]] = idx
-        minv = np.min(dummy)
-        maxv = np.max(dummy)
-        unique = np.unique(dummy)'''
     dummy = tar[:,:]
     #dummy = np.reshape(dummy, (dummy.shape[0], dummy.shape[1]))
     unique = np.unique(dummy)

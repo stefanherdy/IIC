@@ -4,7 +4,6 @@ import torch
 import random
 from IIC import IIC
 import cv2
-import time
 import random
 from utils import transform, backtransform, get_colours
 import matplotlib.pyplot as plt
@@ -46,13 +45,14 @@ class Trainer:
             from tqdm import tqdm, trange
 
         progressbar = trange(self.epochs, desc='Progress')
+        _ , axarr = plt.subplots(2,3)
         for i in progressbar:
             """Epoch counter"""
             self.epoch += 1  # epoch counter
             print(' --------------------- ')
             print('Epoch: ' + str(self.epoch))
             """Training block"""
-            self._train()
+            self._train(axarr)
 
             """Validation block"""
             if self.validation_DataLoader is not None:
@@ -66,12 +66,12 @@ class Trainer:
                     self.lr_scheduler.batch()  # learning rate scheduler step
         return self.training_loss, self.validation_loss, self.learning_rate
 
-    def _train(self):
+    def _train(self, axarr):
 
         if self.notebook:
-            from tqdm.notebook import tqdm, trange
+            from tqdm.notebook import tqdm
         else:
-            from tqdm import tqdm, trange
+            from tqdm import tqdm
 
         self.model.train()  # train mode
         train_losses = []  # accumulate the losses here
@@ -106,9 +106,6 @@ class Trainer:
             inpnp1 = outinp.cpu().detach().numpy()[0, 0, :, :]
             inpnp2 = outinp.cpu().detach().numpy()[0, 1, :, :]
             diff = abs(inpnp1-inpnp2)
-            inpmax = torch.max(outinp, 1)
-            inpmax = torch.max(outinp, 1)[1]
-            inpmax = torch.max(outinp, 1)[1][0,:,:]
             inpmax = torch.max(outinp, 1)[1][0,:,:].cpu().numpy()
             inpmax = inpmax.astype(np.float32)
             inpmax = cv2.resize(inpmax, (128,128))
@@ -135,26 +132,25 @@ class Trainer:
                     y = mask[1][j]
                     col[x, y, :] = colours[int(val)]
 
-            ax1 = plt.subplot(2, 3, 1), plt.imshow(inpnp1, 'gray')
-            ax2 = plt.subplot(2, 3, 2), plt.imshow(inpnp2, 'gray')
-            ax3 = plt.subplot(2, 3, 3), plt.imshow(orig, 'gray')
-            ax4 = plt.subplot(2, 3, 4), plt.imshow(diff, 'gray')
-            ax5 = plt.subplot(2, 3, 5), plt.imshow(col, 'gray')
-            ax6 = plt.subplot(2, 3, 6), plt.imshow(postp, 'gray')
+            axarr[0,0].imshow(self.scale_01(inpnp1), 'gray')
+            axarr[0,1].imshow(self.scale_01(inpnp2), 'gray')
+            axarr[0,2].imshow(self.scale_01(orig), 'gray')
+            axarr[1,0].imshow(self.scale_01(diff), 'gray')
+            axarr[1,1].imshow(self.scale_01(col), 'gray')
+            axarr[1,2].imshow(self.scale_01(postp), 'gray')
 
-            ax1[0].set_title('Class 1')
-            ax2[0].set_title('Class 2')
-            ax3[0].set_title('Orig. Image')
-            ax4[0].set_title('Class Diff.')
-            ax5[0].set_title('Classification')
-            ax6[0].set_title('CL. postprocesssed')
+            axarr[0,0].set_title('Class 1')
+            axarr[0,1].set_title('Class 2')
+            axarr[0,2].set_title('Orig. Image')
+            axarr[1,0].set_title('Class Diff.')
+            axarr[1,1].set_title('Classification')
+            axarr[1,2].set_title('CL. postprocesssed')
             
             plt.show(block=False)
             plt.pause(2)
 
             outtar = backtransform(outtar, randlist_all)
             
-            size = 64
             outtar = torch.reshape(outtar, (outtar.shape[0]*outtar.shape[2]*outtar.shape[2], 2))
             outinp = torch.reshape(outinp, (outinp.shape[0]*outinp.shape[2]*outinp.shape[2] ,2))
 
@@ -205,3 +201,6 @@ class Trainer:
         self.validation_loss.append(np.mean(valid_losses))
 
         batch_iter.close()
+
+    def scale_01(self, inp):
+        return (inp-np.min(inp))/(np.max(inp)-np.min(inp)) 

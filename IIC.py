@@ -18,13 +18,13 @@ def IIC(z, zt, C=3,EPS=0.001):
 
 
 
+if __name__ == "__main__":
+    # Test IIC loss with custom z and zt
+    z = np.array([[1,0,0],[0,1,0],[1,0,0], [1,0,0], [1,0,0]])
+    zt = np.array([[1,0,0],[0,1,0],[1,0,0], [1,0,0], [1,0,0]])
 
-z = np.array([[1,0,0],[0,1,0],[1,0,0], [1,0,0], [1,0,0]])
-zt = np.array([[1,0,0],[0,1,0],[1,0,0], [1,0,0], [1,0,0]])
+    z = torch.from_numpy(z)
+    zt = torch.from_numpy(zt)
 
-z = torch.from_numpy(z)
-zt = torch.from_numpy(zt)
-
-P = IIC(z, zt)
-
-print(P)
+    P = IIC(z, zt)
+    print(P)

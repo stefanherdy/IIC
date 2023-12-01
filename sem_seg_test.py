@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 from transformations import Compose
 from transformations import MoveAxis
 from customdatasets import SegmentationDataSet
@@ -7,62 +8,43 @@ from sklearn.model_selection import train_test_split
 import pathlib# root directory
 import torch
 from matplotlib import pyplot as plt
+import argparse
 
-def loop(learn_rate, epochs, batchsize, layers, blocks):
+def train(args):
     root = pathlib.Path('./')
 
     def get_filenames_of_path(path: pathlib.Path, ext: str = '*'):
-        """Returns a list of files in a directory/path. Uses pathlib."""
         filenames = [file for file in path.glob(ext) if file.is_file()]
-        return filenames# input and target files
+        return filenames
 
     inputs = get_filenames_of_path(root / './input_flower')
-    targets = get_filenames_of_path(root / './input_flower')# training transformations and augmentations
 
     transforms = Compose([
         MoveAxis(),
         ])
-        # random seed
-    random_seed = 42# split dataset into training set and validation set
-    train_size = 0.9  # 80:20 split
 
-    inputs_train, inputs_valid = train_test_split(
-        inputs,
-        random_state=random_seed,
-        train_size=train_size,
-        shuffle=False)
-
-    targets_train, targets_valid = train_test_split(
-        targets,
-        random_state=random_seed,
-        train_size=train_size,
-        shuffle=False)# dataset training
-    dataset_train = SegmentationDataSet(inputs=inputs_train,
-                                        targets=targets_train,
+    dataset_train = SegmentationDataSet(inputs=inputs,
+                                        targets=inputs,
                                         transform=transforms)
 
     # dataset validation
-    dataset_valid = SegmentationDataSet(inputs=inputs_valid,
-                                        targets=targets_valid,
+    dataset_valid = SegmentationDataSet(inputs=inputs,
+                                        targets=inputs,
                                         transform=transforms)
 
     # dataloader training
     dataloader_training = DataLoader(dataset=dataset_train,
-                                    batch_size=batchsize,
+                                    batch_size=args.batch_size,
                                     shuffle=True
                                     )
 
     # dataloader validation
     dataloader_validation = DataLoader(dataset=dataset_valid,
-                                    batch_size=batchsize,
+                                    batch_size=args.batch_size,
                                     shuffle=True
                                     )
 
     x, y = next(iter(dataloader_training))
-
-    print(f'x = shape: {x.shape}; type: {x.dtype}')
-    print(f'x = min: {x.min()}; max: {x.max()}')
-    print(f'y = shape: {y.shape}; class: {y.unique()}; type: {y.dtype}')
 
     from unet import UNet
     from trainer import Trainer
@@ -70,14 +52,13 @@ def loop(learn_rate, epochs, batchsize, layers, blocks):
     
     model = UNet(in_channels=3,
                 out_channels=2,
-                n_blocks=blocks,
-                start_filters=layers,
+                n_blocks=args.num_blocks,
+                start_filters=args.num_layers,
                 activation='relu',
                 normalization='batch',
                 conv_mode='same',
                 dim=2)
 
-    print(model)
 
     if torch.cuda.is_available():
         model.cuda()            
@@ -89,7 +70,7 @@ def loop(learn_rate, epochs, batchsize, layers, blocks):
 
     # criterion
     criterion = torch.nn.CrossEntropyLoss()# optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)# trainer
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learnrate)# trainer
     trainer = Trainer(model=model,
                     device=device,
                     criterion=criterion,
@@ -97,13 +78,11 @@ def loop(learn_rate, epochs, batchsize, layers, blocks):
                     training_DataLoader=dataloader_training,
                     validation_DataLoader=dataloader_validation,
                     lr_scheduler=None,
-                    epochs=epochs,
+                    epochs=args.epochs,
                     epoch=0,
                     notebook=False)# start training
 
     training_losses, validation_losses, lr_rates = trainer.run_trainer()
-    minloss_train = round(min(training_losses), 2)
-    minloss_val = round(min(validation_losses), 2)
     
     fig = plt.figure()
     plt.plot(training_losses)
@@ -116,6 +95,15 @@ def loop(learn_rate, epochs, batchsize, layers, blocks):
     model_name =  'model.pt'
     torch.save(model.state_dict(), pathlib.Path.cwd() / model_name)
 
-loop(0.001, 3000, 4, 32, 1)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Pytorch Semantic Segmentation")
+    parser.add_argument("--learnrate", type=int, default=0.001, help='learn rate of optimizer')
+    parser.add_argument("--epochs", type=int, default=500)
+    parser.add_argument("--batch_size", type=int, default=2, help="Batch Size")
+    parser.add_argument("--num_layers", type=int, default=32, help="Number of UNet layers")
+    parser.add_argument("--num_blocks", type=int, default=1, help="Number of UNet blocks")
+    args = parser.parse_args()
+    
+    train(args)
 
  
