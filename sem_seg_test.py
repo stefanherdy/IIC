@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-from transformations import Compose
-from transformations import MoveAxis
+from transformations import Compose, MoveAxis, Resize
 from customdatasets import SegmentationDataSet
 from torch.utils.data import DataLoader 
 from sklearn.model_selection import train_test_split
@@ -21,6 +20,7 @@ def train(args):
 
     transforms = Compose([
         MoveAxis(),
+        Resize(512)
         ])
 
     dataset_train = SegmentationDataSet(inputs=inputs,
@@ -97,11 +97,12 @@ def train(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pytorch Semantic Segmentation")
-    parser.add_argument("--learnrate", type=int, default=0.001, help='learn rate of optimizer')
+    parser.add_argument("--learnrate", type=int, default=0.0001, help='learn rate of optimizer')
     parser.add_argument("--epochs", type=int, default=500)
     parser.add_argument("--batch_size", type=int, default=2, help="Batch Size")
     parser.add_argument("--num_layers", type=int, default=32, help="Number of UNet layers")
     parser.add_argument("--num_blocks", type=int, default=1, help="Number of UNet blocks")
+    parser.add_argument("--resize", type=int, default=512, help="Image size for resizing")
     args = parser.parse_args()
     
     train(args)

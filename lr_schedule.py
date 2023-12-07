@@ -7,10 +7,6 @@ import math
 
 
 class LearningRateFinder:
-    """
-    Train a model using different learning rates within a range to find the optimal learning rate.
-    """
-
     def __init__(self,
                  model: nn.Module,
                  criterion,
@@ -32,9 +28,6 @@ class LearningRateFinder:
             max_lr=0.1,
             constant_increment=False
             ):
-        """
-        Trains the model for number of steps using varied learning rate and store the statistics
-        """
         self.loss_history = {}
         self.model.train()
         current_lr = min_lr
@@ -71,9 +64,7 @@ class LearningRateFinder:
              clipping=True,
              smoothing_factor=0.1
              ):
-        """
-        Shows loss vs learning rate(log scale) in a matplotlib plot
-        """
+        
         loss_data = pd.Series(list(self.loss_history.values()))
         lr_list = list(self.loss_history.keys())
         if smoothing:
@@ -91,9 +82,6 @@ class LearningRateFinder:
         plt.show()
 
     def reset(self):
-        """
-        Resets the model and optimizer to its initial state
-        """
         self.model.load_state_dict(self._model_init)
         self.optimizer.load_state_dict(self._opt_init)
         print('Model and optimizer in initial state.')
